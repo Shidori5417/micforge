@@ -1,0 +1,21 @@
+pkgbase = micforge
+	pkgdesc = Real-time microphone processing TUI for PipeWire (EQ, dynamics, RNNoise, effects, virtual mic)
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/Shidori5417/micforge
+	arch = x86_64
+	arch = aarch64
+	license = GPL-3.0-or-later
+	makedepends = cargo
+	makedepends = clang
+	makedepends = pkgconf
+	makedepends = libpipewire
+	depends = pipewire
+	depends = wireplumber
+	depends = gcc-libs
+	depends = glibc
+	options = !lto
+	source = micforge-0.1.0.tar.gz::https://github.com/Shidori5417/micforge/archive/refs/tags/v0.1.0.tar.gz
+	sha256sums = 4aa30ff5f2f8e9e11fbb16c471ce46f16d2e828002080eded75d043a0f58fbd3
+
+pkgname = micforge

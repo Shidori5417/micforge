@@ -1,0 +1,39 @@
+# Maintainer: Mehmet Karaca <karacamemo1 at gmail dot com>
+pkgname=micforge
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Real-time microphone processing TUI for PipeWire (EQ, dynamics, RNNoise, effects, virtual mic)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Shidori5417/micforge"
+license=('GPL-3.0-or-later')
+depends=('pipewire' 'wireplumber' 'gcc-libs' 'glibc')
+makedepends=('cargo' 'clang' 'pkgconf' 'libpipewire')
+options=('!lto')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('4aa30ff5f2f8e9e11fbb16c471ce46f16d2e828002080eded75d043a0f58fbd3')
+
+prepare() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release -p micforge-tui
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo test --frozen --workspace
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  install -Dm755 target/release/micforge "$pkgdir/usr/bin/micforge"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md README.en.md -t "$pkgdir/usr/share/doc/$pkgname/"
+}
