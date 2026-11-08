@@ -1,0 +1,22 @@
+[package]
+name = "micforge-dsp"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+nnnoiseless = { version = "0.5.2", default-features = false }
+rustfft = "6"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[features]
+default = ["pitch"]
+# Pitch shift modülü ve "Derin ses" perde kaydırması.
+pitch = []
+
+[[bench]]
+name = "chain"
+harness = false

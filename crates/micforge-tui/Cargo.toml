@@ -1,0 +1,23 @@
+[package]
+name = "micforge-tui"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+crossterm = "0.29"
+dirs = "7.0.0"
+ebur128 = "0.1.11"
+micforge-audio = { version = "0.1.0", path = "../micforge-audio" }
+micforge-dsp = { version = "0.1.0", path = "../micforge-dsp" }
+ratatui = "0.30"
+rtrb = "0.4"
+serde = { version = "1.0.229", features = ["derive"] }
+signal-hook = "0.4.6"
+toml = "1.2.1"
+
+[[bin]]
+name = "micforge"
+path = "src/main.rs"
