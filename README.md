@@ -97,18 +97,31 @@ Giriş kademesi her zaman başta, çıkış kazancı ve limiter her zaman sonda 
 
 ## 📦 Kurulum
 
-### Gereksinimler
+PipeWire **1.0 veya üstü** olan her Linux dağıtımında çalışır:
 
-- Linux, **PipeWire** ve **WirePlumber**
-- Rust **≥ 1.85** (edition 2024)
-- Derleme için: `clang`, `pkgconf`, PipeWire başlıkları (`libpipewire`)
+| Dağıtım | Durum |
+| --- | --- |
+| Arch, CachyOS, Manjaro, EndeavourOS | ✅ |
+| Ubuntu 24.04+, Debian 13+ | ✅ |
+| Fedora 40+ | ✅ |
+| Debian 12, Ubuntu 22.04 | ❌ PipeWire çok eski |
+
+Hazır paketler her sürümde [Releases](https://github.com/Shidori5417/micforge/releases) sayfasına otomatik yüklenir (x86_64).
+
+### Ubuntu / Debian (.deb)
 
 ```sh
-# Arch Linux / CachyOS / EndeavourOS
-sudo pacman -S --needed pipewire wireplumber rust clang pkgconf libpipewire
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_0.1.0-1_amd64.deb
+sudo apt install ./micforge_0.1.0-1_amd64.deb
 ```
 
-### Seçenek A — PKGBUILD (Arch tabanlı, önerilen)
+### Fedora (.rpm)
+
+```sh
+sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-1.x86_64.rpm
+```
+
+### Arch Linux ve türevleri
 
 ```sh
 git clone https://github.com/Shidori5417/micforge.git
@@ -116,9 +129,17 @@ cd micforge
 makepkg -si
 ```
 
-`/usr/bin/micforge` kurulur. Kaldırmak için: `sudo pacman -R micforge`.
+### Diğer dağıtımlar (.tar.gz)
 
-### Seçenek B — cargo
+```sh
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-x86_64-linux.tar.gz
+tar xzf micforge-0.1.0-x86_64-linux.tar.gz
+install -Dm755 micforge-0.1.0-x86_64-linux/micforge ~/.local/bin/micforge
+```
+
+### Kaynaktan derleme
+
+Rust **≥ 1.85**, `clang`, `pkgconf` ve PipeWire geliştirme başlıkları gerekir (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
 
 ```sh
 cargo build --release

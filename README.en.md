@@ -97,18 +97,31 @@ The input stage always comes first, and the output gain and limiter always come 
 
 ## 📦 Install
 
-### Requirements
+Runs on any Linux distribution with PipeWire **1.0 or newer**:
 
-- Linux with **PipeWire** and **WirePlumber**
-- Rust **≥ 1.85** (edition 2024)
-- To build: `clang`, `pkgconf`, PipeWire headers (`libpipewire`)
+| Distribution | Status |
+| --- | --- |
+| Arch, CachyOS, Manjaro, EndeavourOS | ✅ |
+| Ubuntu 24.04+, Debian 13+ | ✅ |
+| Fedora 40+ | ✅ |
+| Debian 12, Ubuntu 22.04 | ❌ PipeWire too old |
+
+Prebuilt packages are uploaded to [Releases](https://github.com/Shidori5417/micforge/releases) automatically for every version (x86_64).
+
+### Ubuntu / Debian (.deb)
 
 ```sh
-# Arch Linux / CachyOS / EndeavourOS
-sudo pacman -S --needed pipewire wireplumber rust clang pkgconf libpipewire
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_0.1.0-1_amd64.deb
+sudo apt install ./micforge_0.1.0-1_amd64.deb
 ```
 
-### Option A — PKGBUILD (Arch-based, recommended)
+### Fedora (.rpm)
+
+```sh
+sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-1.x86_64.rpm
+```
+
+### Arch Linux and derivatives
 
 ```sh
 git clone https://github.com/Shidori5417/micforge.git
@@ -116,9 +129,17 @@ cd micforge
 makepkg -si
 ```
 
-This installs `/usr/bin/micforge`. To remove it: `sudo pacman -R micforge`.
+### Other distributions (.tar.gz)
 
-### Option B — cargo
+```sh
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-x86_64-linux.tar.gz
+tar xzf micforge-0.1.0-x86_64-linux.tar.gz
+install -Dm755 micforge-0.1.0-x86_64-linux/micforge ~/.local/bin/micforge
+```
+
+### Build from source
+
+Requires Rust **≥ 1.85**, `clang`, `pkgconf` and the PipeWire development headers (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
 
 ```sh
 cargo build --release
