@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2024"
 license.workspace = true
 authors.workspace = true
+description = "Real-time microphone processing TUI for Linux (PipeWire) with a virtual mic"
+repository = "https://github.com/Shidori5417/micforge"
+homepage = "https://github.com/Shidori5417/micforge"
+readme = "../../README.en.md"
 
 [dependencies]
 anyhow = "1.0.104"
@@ -21,3 +25,37 @@ toml = "1.2.1"
 [[bin]]
 name = "micforge"
 path = "src/main.rs"
+
+[package.metadata.deb]
+name = "micforge"
+maintainer = "Mehmet Karaca <karacamemo1@gmail.com>"
+copyright = "2026, Mehmet Karaca"
+license-file = ["../../LICENSE", "0"]
+extended-description = """\
+Terminal UI for real-time microphone processing on Linux (PipeWire). \
+EQ, dynamics, RNNoise noise suppression and effects; the result is exposed \
+as a virtual microphone called "MicForge Mic"."""
+section = "sound"
+priority = "optional"
+depends = "$auto, pipewire"
+assets = [
+    ["target/release/micforge", "usr/bin/", "755"],
+    ["../../README.md", "usr/share/doc/micforge/README.md", "644"],
+    ["../../README.en.md", "usr/share/doc/micforge/README.en.md", "644"],
+]
+
+[package.metadata.generate-rpm]
+name = "micforge"
+license = "GPL-3.0-or-later"
+summary = "Real-time microphone processing TUI for PipeWire"
+auto-req = "no"
+assets = [
+    { source = "target/release/micforge", dest = "/usr/bin/micforge", mode = "755" },
+    { source = "../../LICENSE", dest = "/usr/share/licenses/micforge/LICENSE", mode = "644", doc = true },
+    { source = "../../README.md", dest = "/usr/share/doc/micforge/README.md", mode = "644", doc = true },
+    { source = "../../README.en.md", dest = "/usr/share/doc/micforge/README.en.md", mode = "644", doc = true },
+]
+
+[package.metadata.generate-rpm.requires]
+pipewire = ">= 1.0"
+pipewire-libs = ">= 1.0"

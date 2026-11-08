@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sistem bağımlılıkları
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpipewire-0.3-dev libclang-dev clang pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Paketleme araçları
+        run: cargo install --locked cargo-deb cargo-generate-rpm
+      - name: Sürüm etiketi Cargo sürümüyle aynı mı
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          ver=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[] | select(.name=="micforge-tui") | .version')
+          test "$tag" = "$ver" || { echo "Etiket $tag, Cargo sürümü $ver"; exit 1; }
+      - name: Derle
+        run: cargo build --release --locked -p micforge-tui
+      - name: Paketle
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          name="micforge-${ver}-x86_64-linux"
+          mkdir -p dist "$name"
+          cp target/release/micforge LICENSE README.md README.en.md "$name/"
+          tar -czf "dist/${name}.tar.gz" "$name"
+          cargo deb -p micforge-tui --no-build --output dist/
+          cargo generate-rpm -p crates/micforge-tui -o dist/
+          cd dist && sha256sum * > SHA256SUMS
+      - name: GitHub sürümü oluştur
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "MicForge $GITHUB_REF_NAME" --generate-notes
