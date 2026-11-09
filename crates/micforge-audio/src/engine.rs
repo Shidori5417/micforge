@@ -84,8 +84,13 @@ pub enum CaptureStatus {
 pub enum Event {
     Devices(Vec<Device>),
     Capture(CaptureStatus),
-    /// Kurtarılamaz hata (ör. PipeWire bağlantısı koptu).
+    /// Kurtarılamaz hata (ör. PipeWire bağlantısı koptu): motor durdu,
+    /// yeniden başlatılması gerekir.
     Fatal(String),
+    /// Motor çalışmaya devam eden hata (ör. yakalama akışı bağlanamadı).
+    Error(String),
+    /// Monitor akışı bağlanamadı veya hata durumuna düştü; UI monitörü kapatmalı.
+    MonitorFailed(String),
 }
 
 enum Command {
@@ -190,14 +195,27 @@ impl AudioEngine {
     pub fn set_monitor(&self, on: bool) {
         let _ = self.cmd.send(Command::Monitor(on));
     }
+
+    /// PipeWire thread'i hâlâ çalışıyor mu (bağlantı koparsa durur).
+    pub fn is_running(&self) -> bool {
+        self.thread.as_ref().is_some_and(|t| !t.is_finished())
+    }
 }
 
-impl Drop for AudioEngine {
-    fn drop(&mut self) {
+impl AudioEngine {
+    /// PipeWire thread'ini durdurur ve bekler; sanal mikrofon kaldırılır.
+    /// Birden çok kez çağrılabilir (yeniden başlatmadan önce kullanılır).
+    pub fn shutdown(&mut self) {
         let _ = self.cmd.send(Command::Quit);
         if let Some(t) = self.thread.take() {
             let _ = t.join();
         }
+    }
+}
+
+impl Drop for AudioEngine {
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }
 
@@ -237,7 +255,7 @@ impl State {
                     Err(e) => {
                         let _ = self
                             .events
-                            .send(Event::Fatal(format!("Yakalama akışı bağlanamadı: {e}")));
+                            .send(Event::Error(format!("Yakalama akışı bağlanamadı: {e}")));
                     }
                 }
             }
@@ -333,6 +351,7 @@ fn run(
         },
     )
     .map_err(|e| format!("Monitor akışı oluşturulamadı: {e}"))?;
+    let mon_ev = events.clone();
     let _mon_listener = monitor
         .add_local_listener_with_user_data(PlaybackRt {
             consumer: mon_consumer,
@@ -341,6 +360,12 @@ fn run(
                 params: params.clone(),
                 gain: Smoother::new(0.0, SAMPLE_RATE as f32),
             }),
+        })
+        .state_changed(move |_, _, _, new| {
+            // Bağlandıktan sonra da düşebilir (ör. çıkış cihazı kayboldu).
+            if let pw::stream::StreamState::Error(e) = new {
+                let _ = mon_ev.send(Event::MonitorFailed(e));
+            }
         })
         .process(|stream, rt| rt.process(stream))
         .register()
@@ -484,7 +509,7 @@ fn run(
             match res {
                 Ok(()) => monitor_on.set(on),
                 Err(e) => {
-                    let _ = ev2.send(Event::Fatal(format!("Monitor akışı: {e}")));
+                    let _ = ev2.send(Event::MonitorFailed(e.to_string()));
                 }
             }
         }

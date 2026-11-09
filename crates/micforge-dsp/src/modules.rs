@@ -107,8 +107,10 @@ impl HighPass {
         self.log_freq.set_target(freq.ln());
         let n = [1, 2, 4][slope_index.min(2)];
         if n != self.n_stages {
-            // Yeni eklenen katlar temiz başlasın.
-            for s in &mut self.stages[self.n_stages.min(n)..] {
+            // Eğim değişince tüm katların Butterworth Q'ları değişir (1 kat: 0.707,
+            // 2 kat: 0.541/1.307, ...). Eski durumla yeni katsayılar uyumsuz olur
+            // (tık/geçici salınım), bu yüzden ilk kat dahil hepsi sıfırlanır.
+            for s in &mut self.stages {
                 s.reset();
             }
             self.n_stages = n;
@@ -382,6 +384,24 @@ mod tests {
             );
             assert!(h.magnitude_db(5000.0).abs() < 0.01);
         }
+    }
+
+    #[test]
+    fn hpf_slope_change_resets_all_stages() {
+        // Eğim 12 -> 24 dB/okt değişince filtre, aynı eğimle yeni kurulmuş
+        // bir filtreyle aynı çıktıyı vermeli (ilk kat durumu taşınmamalı).
+        let mut a = HighPass::new(FS, 100.0);
+        a.set(100.0, 0);
+        let mut warm = sine(60.0, 4800);
+        a.process(&mut warm);
+        a.set(100.0, 1);
+        let mut b = HighPass::new(FS, 100.0);
+        b.set(100.0, 1);
+        let mut x = sine(300.0, 1024);
+        let mut y = x.clone();
+        a.process(&mut x);
+        b.process(&mut y);
+        assert_eq!(x, y);
     }
 
     #[test]

@@ -241,21 +241,34 @@ const CLIP_HOLD: Duration = Duration::from_secs(2);
 const HISTORY_MAX: usize = 200;
 const HISTORY_COALESCE: Duration = Duration::from_millis(600);
 
-fn new_history() -> History<ParamId> {
+/// Geri alma geçmişindeki bir anahtar: parametre değeri ya da zincirdeki bir
+/// sıra konumunda duran modül (değer = modül indeksi).
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum HistKey {
+    Param(ParamId),
+    Order(u8),
+}
+
+fn new_history() -> History<HistKey> {
     History::new(HISTORY_MAX, HISTORY_COALESCE)
 }
+
+/// Motor durduğunda yeniden başlatma denemeleri arası süre.
+const ENGINE_RETRY: Duration = Duration::from_secs(3);
 
 /// A/B karşılaştırmada etkin olmayan ayar kümesi.
 struct AbSlot {
     values: Vec<f32>,
     order: [u8; MODULE_COUNT],
-    history: History<ParamId>,
+    history: History<HistKey>,
 }
 
 /// Metin girişi / onay gerektiren preset işlemleri.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PromptKind {
     SaveAs,
+    /// "Farklı kaydet" adı mevcut bir presetle çakışıyor; üzerine yazma onayı.
+    ConfirmSaveAs(String),
     Import,
     Export(std::path::PathBuf),
     ConfirmOverwriteExport(std::path::PathBuf, std::path::PathBuf),
@@ -370,7 +383,7 @@ pub struct App {
     pub fatal: Option<String>,
     pub quit: bool,
     pub areas: Areas,
-    history: History<ParamId>,
+    history: History<HistKey>,
     /// A/B: true ise B etkin.
     pub ab_is_b: bool,
     ab_other: Option<AbSlot>,
@@ -403,6 +416,8 @@ pub struct App {
     pub theme_errors: Vec<String>,
     /// Son geri besleme algılaması (frekans, an): uyarı rozeti için.
     pub feedback_hit: Option<(f32, Instant)>,
+    /// Ses motoru durduysa (PipeWire koptu) bir sonraki yeniden başlatma denemesi.
+    pub engine_retry_at: Option<Instant>,
 }
 
 impl App {
@@ -473,6 +488,7 @@ impl App {
             show_help: false,
             theme_errors,
             feedback_hit: None,
+            engine_retry_at: None,
         }
     }
 
@@ -535,8 +551,30 @@ impl App {
                     self.list.select(idx);
                 }
                 AudioEvent::Capture(s) => self.status = s,
-                AudioEvent::Fatal(e) => self.fatal = Some(e),
+                AudioEvent::Fatal(e) => {
+                    self.fatal = Some(e);
+                    self.engine_down();
+                }
+                AudioEvent::Error(e) => self.message = Some(e),
+                AudioEvent::MonitorFailed(e) => {
+                    // Monitör çalışmıyor: parametreyi kapat ki açık görünmesin.
+                    self.apply_param(ParamId::MonitorOn, 0.0);
+                    self.message = Some(tr!(
+                        format!("Monitor akışı başlatılamadı, kapatıldı: {e}"),
+                        format!("Monitor stream failed and was turned off: {e}")
+                    ));
+                }
             }
+        }
+        if self.engine_retry_at.is_none() && !self.engine.is_running() {
+            // Thread olay göndermeden bittiyse de motor durmuş sayılır.
+            self.fatal.get_or_insert_with(|| {
+                l("Ses motoru durdu.", "The audio engine stopped.").to_string()
+            });
+            self.engine_down();
+        }
+        if self.engine_retry_at.is_some_and(|t| Instant::now() >= t) {
+            self.restart_engine();
         }
 
         let now = Instant::now();
@@ -601,6 +639,40 @@ impl App {
         }
         if self.save_at.is_some_and(|t| now >= t) {
             self.save_config();
+        }
+    }
+
+    /// Motor durdu: monitörü kapat, durum bilgisini sıfırla ve yeniden başlatmayı planla.
+    fn engine_down(&mut self) {
+        if self.engine_retry_at.is_some() {
+            return;
+        }
+        self.apply_param(ParamId::MonitorOn, 0.0);
+        self.monitor_sent = false;
+        self.status = CaptureStatus::Idle;
+        self.learn_started = None;
+        self.engine_retry_at = Some(Instant::now() + ENGINE_RETRY);
+        if let Some(f) = &mut self.fatal {
+            f.push_str(l(
+                "\n\nSes motoru birkaç saniyede bir otomatik olarak yeniden başlatılacak.",
+                "\n\nThe audio engine will be restarted automatically every few seconds.",
+            ));
+        }
+    }
+
+    /// Ses motorunu yeniden başlatmayı dener; başarısızsa daha sonra tekrar dener.
+    fn restart_engine(&mut self) {
+        self.engine.shutdown();
+        let device = self.config.last_device.clone();
+        match AudioEngine::start(device, self.params.clone(), self.config.out_channels()) {
+            Ok(e) => {
+                self.engine = e;
+                self.engine_retry_at = None;
+                self.fatal = None;
+                self.init_profiles();
+                self.flash(l("Ses motoru yeniden başlatıldı", "Audio engine restarted"));
+            }
+            Err(_) => self.engine_retry_at = Some(Instant::now() + ENGINE_RETRY),
         }
     }
 
@@ -864,14 +936,36 @@ impl App {
         }
     }
 
+    /// Klavye/fare girişini kendine alan bir pencere açık mı.
+    fn modal_open(&self) -> bool {
+        self.show_notice
+            || self.show_help
+            || self.entry.is_some()
+            || self.prompt.is_some()
+            || self.message.is_some()
+            || self.fatal.is_some()
+    }
+
     fn mouse(&mut self, m: MouseEvent) {
         let pos = Position::new(m.column, m.row);
+        if self.modal_open() {
+            // Pencere açıkken arkadaki arayüz fareye tepki vermez; tıklama yalnızca
+            // bilgi ve yardım pencerelerini kapatır.
+            if m.kind == MouseEventKind::Down(MouseButton::Left) {
+                if self.show_notice {
+                    self.dismiss_notice();
+                } else if self.show_help {
+                    self.show_help = false;
+                }
+            }
+            self.dragging = None;
+            self.dragging_band = None;
+            self.chain_drag = None;
+            return;
+        }
         match m.kind {
             MouseEventKind::Down(MouseButton::Left)
-                if self.tab == 1
-                    && !self.show_notice
-                    && self.entry.is_none()
-                    && self.areas.graph.contains(pos) =>
+                if self.tab == 1 && self.areas.graph.contains(pos) =>
             {
                 let markers = self.band_markers();
                 if let Some(b) =
@@ -919,21 +1013,6 @@ impl App {
                 self.set_param(id, id.spec().step(self.params.get(id), dir, fine));
             }
             MouseEventKind::Down(MouseButton::Left) => {
-                if self.show_notice {
-                    self.dismiss_notice();
-                    return;
-                }
-                if self.show_help {
-                    self.show_help = false;
-                    return;
-                }
-                if self.entry.is_some()
-                    || self.prompt.is_some()
-                    || self.message.is_some()
-                    || self.fatal.is_some()
-                {
-                    return;
-                }
                 if self.tab == 7
                     && let Some(i) = self
                         .areas
@@ -1138,16 +1217,52 @@ impl App {
         self.set_param(t, 1.0 - self.params.get(t));
     }
 
-    /// Modül sırasını uygular ve config'e yazar.
+    /// Kullanıcı değişikliği: sırayı uygular ve geri alma geçmişine yazar.
     pub fn set_order(&mut self, order: [u8; MODULE_COUNT]) {
-        if self.params.set_order(&order) {
-            self.config.chain_order = Some(
-                order
-                    .iter()
-                    .map(|&m| MODULE_KEYS[m as usize].to_string())
-                    .collect(),
-            );
-            self.save_at.get_or_insert(Instant::now() + SAVE_DELAY);
+        let changes = self.apply_order(order);
+        if !changes.is_empty() {
+            self.history.record_bulk(changes, Instant::now());
+            self.preset_dirty = true;
+        }
+    }
+
+    /// Modül sırasını uygular ve config'e yazar (geçmişe yazmaz). Değişen sıra
+    /// konumlarını geçmiş kaydı biçiminde döner.
+    fn apply_order(&mut self, order: [u8; MODULE_COUNT]) -> Vec<(HistKey, f32, f32)> {
+        let old = self.params.order();
+        if !self.params.set_order(&order) {
+            return Vec::new();
+        }
+        self.config.chain_order = Some(
+            order
+                .iter()
+                .map(|&m| MODULE_KEYS[m as usize].to_string())
+                .collect(),
+        );
+        self.save_at.get_or_insert(Instant::now() + SAVE_DELAY);
+        (0..MODULE_COUNT)
+            .filter(|&i| old[i] != order[i])
+            .map(|i| (HistKey::Order(i as u8), old[i] as f32, order[i] as f32))
+            .collect()
+    }
+
+    /// Geçmişten gelen değerleri uygular (geri al / yinele).
+    fn apply_history(&mut self, changes: Vec<(HistKey, f32)>) {
+        let mut order = self.params.order();
+        let mut order_changed = false;
+        for (k, v) in changes {
+            match k {
+                HistKey::Param(id) => {
+                    self.apply_param(id, v);
+                }
+                HistKey::Order(i) => {
+                    order[i as usize] = v as u8;
+                    order_changed = true;
+                }
+            }
+        }
+        if order_changed {
+            self.apply_order(order);
         }
     }
 
@@ -1225,7 +1340,8 @@ impl App {
         let old = self.params.get(id);
         let v = self.apply_param(id, v);
         if v != old && id.is_sound() {
-            self.history.record(id, old, v, Instant::now());
+            self.history
+                .record(HistKey::Param(id), old, v, Instant::now());
             self.preset_dirty = true;
         }
     }
@@ -1243,17 +1359,15 @@ impl App {
         v
     }
 
-    /// Toplu değer uygulama (preset, A/B). `record`: tek geri alma adımı olarak yaz.
-    fn apply_values(&mut self, values: &[(ParamId, f32)], record: bool) {
+    /// Toplu değer uygulama (preset, A/B); değişiklikleri geçmiş kaydı biçiminde döner.
+    fn apply_values(&mut self, values: &[(ParamId, f32)]) -> Vec<(HistKey, f32, f32)> {
         let mut changes = Vec::new();
         for &(id, v) in values {
             let old = self.params.get(id);
             let new = self.apply_param(id, v);
-            changes.push((id, old, new));
+            changes.push((HistKey::Param(id), old, new));
         }
-        if record {
-            self.history.record_bulk(changes, Instant::now());
-        }
+        changes
     }
 
     fn current_values(&self) -> Vec<(ParamId, f32)> {
@@ -1274,9 +1388,7 @@ impl App {
     fn undo(&mut self) {
         match self.history.undo() {
             Some(ch) => {
-                for (id, v) in ch {
-                    self.apply_param(id, v);
-                }
+                self.apply_history(ch);
                 self.preset_dirty = true;
                 self.flash(l("Geri alındı", "Undone"));
             }
@@ -1287,9 +1399,7 @@ impl App {
     fn redo(&mut self) {
         match self.history.redo() {
             Some(ch) => {
-                for (id, v) in ch {
-                    self.apply_param(id, v);
-                }
+                self.apply_history(ch);
                 self.preset_dirty = true;
                 self.flash(l("Yinelendi", "Redone"));
             }
@@ -1311,8 +1421,8 @@ impl App {
         });
         let vals: Vec<(ParamId, f32)> =
             ParamId::sound().zip(other.values.iter().copied()).collect();
-        self.apply_values(&vals, false);
-        self.set_order(other.order);
+        self.apply_values(&vals);
+        self.apply_order(other.order);
         self.history = other.history;
         self.ab_other = Some(cur);
         self.ab_is_b = !self.ab_is_b;
@@ -1412,13 +1522,15 @@ impl App {
             }
         };
         let values = preset.resolved_values();
-        self.apply_values(&values, true);
+        let mut changes = self.apply_values(&values);
         let order = preset
             .chain_order
             .as_ref()
             .and_then(|keys| order_from_keys(keys))
             .unwrap_or(DEFAULT_ORDER);
-        self.set_order(order);
+        changes.extend(self.apply_order(order));
+        // Değerler ve sıra tek adımda geri alınır.
+        self.history.record_bulk(changes, Instant::now());
         self.current_preset = Some(preset.name.clone());
         self.config.last_preset = Some(preset.name.clone());
         self.preset_dirty = false;
@@ -1486,6 +1598,7 @@ impl App {
             prompt.kind,
             PromptKind::ConfirmDelete(_)
                 | PromptKind::ConfirmSave(_)
+                | PromptKind::ConfirmSaveAs(_)
                 | PromptKind::ConfirmOverwriteExport(..)
         );
         match k.code {
@@ -1519,7 +1632,11 @@ impl App {
             return;
         };
         match kind {
+            PromptKind::SaveAs if store.name_taken(&text) => {
+                self.open_prompt(PromptKind::ConfirmSaveAs(text), "")
+            }
             PromptKind::SaveAs => self.save_preset(&text, ""),
+            PromptKind::ConfirmSaveAs(name) => self.save_preset(&name, ""),
             PromptKind::ConfirmSave(path) => match store.load(&path) {
                 Ok(p) => self.save_preset(&p.name, &p.description),
                 Err(e) => self.message = Some(e),
@@ -1694,5 +1811,125 @@ mod tests {
         assert_eq!(&o[10..], &[10, 11, 12, 13, 14]);
         assert!(order_from_keys(&["hpf".into(), "hpf".into()]).is_none());
         assert!(order_from_keys(&["yok".into()]).is_none());
+    }
+
+    fn key(app: &mut App, c: KeyCode) {
+        app.handle(Event::Key(KeyEvent::new(c, KeyModifiers::NONE)));
+    }
+
+    fn click(app: &mut App, kind: MouseEventKind, x: u16, y: u16) {
+        app.handle(Event::Mouse(MouseEvent {
+            kind,
+            column: x,
+            row: y,
+            modifiers: KeyModifiers::NONE,
+        }));
+    }
+
+    /// Gerçek ses motoruyla uygulama davranışı. Kullanıcının config'ine
+    /// dokunmamak için XDG_CONFIG_HOME geçici bir dizine yönlendirilir.
+    /// Çalıştırma: cargo test -p micforge-tui -- --ignored app_behaviour
+    #[test]
+    #[ignore = "çalışan bir PipeWire oturumu gerekir"]
+    fn app_behaviour_with_engine() {
+        let tmp = std::env::temp_dir().join(format!("micforge-app-test-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).unwrap();
+        // SAFETY: Bu test dosyadaki ortam değişkenine dokunan tek test.
+        unsafe { std::env::set_var("XDG_CONFIG_HOME", &tmp) };
+        let params = Arc::new(ParamStore::default());
+        let engine = AudioEngine::start(None, params.clone(), 2).expect("PipeWire");
+        let mut app = App::new(engine, params, Config::default(), None);
+        app.show_notice = false;
+        let store = PresetStore::new(tmp.join("presets"));
+        app.presets = Some(store);
+        app.tab = 6;
+
+        // 2: "Farklı kaydet" mevcut adı sorar, onaysız ezmez.
+        app.save_preset("Deneme", "ilk");
+        let path = app.presets.as_ref().unwrap().dir().join("deneme.toml");
+        let before = std::fs::read_to_string(&path).unwrap();
+        app.set_param(ParamId::InputGain, 6.0);
+        key(&mut app, KeyCode::Char('n'));
+        for c in "Deneme".chars() {
+            key(&mut app, KeyCode::Char(c));
+        }
+        key(&mut app, KeyCode::Enter);
+        assert!(matches!(
+            app.prompt.as_ref().map(|p| &p.kind),
+            Some(PromptKind::ConfirmSaveAs(n)) if n == "Deneme"
+        ));
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), before);
+        key(&mut app, KeyCode::Char('h'));
+        assert!(app.prompt.is_none());
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), before);
+        key(&mut app, KeyCode::Char('n'));
+        for c in "Deneme".chars() {
+            key(&mut app, KeyCode::Char(c));
+        }
+        key(&mut app, KeyCode::Enter);
+        key(&mut app, KeyCode::Enter);
+        assert_ne!(std::fs::read_to_string(&path).unwrap(), before);
+
+        // 3: Preset yükleme sırayı da değiştirir; geri alma sırayı geri getirir.
+        let mut custom = DEFAULT_ORDER;
+        custom.swap(0, 1);
+        app.set_order(custom);
+        assert!(app.preset_dirty, "set_order preset'i kirli işaretlemeli");
+        app.set_param(ParamId::InputGain, 0.0);
+        app.save_preset("Ozel", "");
+        app.set_order(DEFAULT_ORDER);
+        app.set_param(ParamId::InputGain, 3.0);
+        app.select_preset_named("Ozel");
+        app.load_selected_preset();
+        assert_eq!(app.params.order(), custom);
+        app.undo();
+        assert_eq!(app.params.order(), DEFAULT_ORDER);
+        assert_eq!(app.params.get(ParamId::InputGain), 3.0);
+        app.redo();
+        assert_eq!(app.params.order(), custom);
+        app.undo();
+        app.undo(); // InputGain 0 -> 3
+        app.undo(); // sıra: custom -> DEFAULT geri alınır
+        assert_eq!(app.params.order(), custom);
+
+        // 7: Yardım açıkken fare arkadaki arayüzü değiştirmez.
+        app.areas.params = vec![(
+            ParamId::InputGain,
+            Rect::new(0, 10, 40, 1),
+            Rect::new(10, 10, 30, 1),
+            0,
+            0,
+        )];
+        let g = app.params.get(ParamId::InputGain);
+        app.show_help = true;
+        click(&mut app, MouseEventKind::ScrollUp, 15, 10);
+        click(&mut app, MouseEventKind::Drag(MouseButton::Left), 39, 10);
+        assert_eq!(app.params.get(ParamId::InputGain), g);
+        click(&mut app, MouseEventKind::Down(MouseButton::Left), 39, 10);
+        assert!(!app.show_help);
+        assert_eq!(app.params.get(ParamId::InputGain), g);
+        app.message = Some("x".into());
+        click(&mut app, MouseEventKind::ScrollUp, 15, 10);
+        assert_eq!(app.params.get(ParamId::InputGain), g);
+        app.message = None;
+        click(&mut app, MouseEventKind::ScrollUp, 15, 10);
+        assert_ne!(app.params.get(ParamId::InputGain), g);
+
+        // 8: Motor durursa monitor kapanır ve motor yeniden başlatılır.
+        app.set_param(ParamId::MonitorOn, 1.0);
+        app.tick();
+        app.engine.shutdown();
+        app.tick();
+        assert!(app.engine_retry_at.is_some());
+        assert!(app.fatal.is_some());
+        assert!(!app.params.on(ParamId::MonitorOn));
+        app.engine_retry_at = Some(Instant::now());
+        app.tick();
+        assert!(app.engine_retry_at.is_none());
+        assert!(app.engine.is_running());
+        assert!(app.fatal.is_none());
+
+        drop(app);
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

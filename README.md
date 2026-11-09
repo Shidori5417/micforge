@@ -8,7 +8,7 @@ Mikrofonunu seç, sesini EQ, dinamik işleme, gürültü bastırma ve efektlerde
 sonucu Discord, OBS ve diğer uygulamalarda **„MicForge Mic”** adlı sanal mikrofon olarak kullan.
 
 [![Lisans: GPL-3.0-or-later](https://img.shields.io/badge/lisans-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
-[![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
+[![Rust 1.89+](https://img.shields.io/badge/rust-1.89%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![PipeWire](https://img.shields.io/badge/ses-PipeWire-4b8bbe?style=flat-square)](https://pipewire.org)
 [![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey?style=flat-square&logo=linux&logoColor=white)](#kurulum)
 [![TUI: ratatui](https://img.shields.io/badge/TUI-ratatui-8a2be2?style=flat-square)](https://ratatui.rs)
@@ -91,7 +91,7 @@ flowchart LR
     PAN -.-> MON([🎧 Monitor])
 ```
 
-Giriş kademesi her zaman başta, çıkış kazancı ve limiter her zaman sonda olduğu için modül sırası ne olursa olsun çıkış tavanı aşılmaz.
+Giriş kademesi her zaman başta, çıkış kazancı ve limiter her zaman sonda olduğu için modül sırası ne olursa olsun **limiter açıkken** çıkış tavanı aşılmaz. Limiter kapalıysa (ör. `Ham` preseti) bu garanti geçerli değildir.
 
 <a id="kurulum"></a>
 
@@ -111,14 +111,14 @@ Hazır paketler her sürümde [Releases](https://github.com/Shidori5417/micforge
 ### Ubuntu / Debian (.deb)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_0.1.0-1_amd64.deb
-sudo apt install ./micforge_0.1.0-1_amd64.deb
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_amd64.deb
+sudo apt install ./micforge_amd64.deb
 ```
 
 ### Fedora (.rpm)
 
 ```sh
-sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-1.x86_64.rpm
+sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge.x86_64.rpm
 ```
 
 ### Arch Linux ve türevleri
@@ -132,14 +132,14 @@ makepkg -si
 ### Diğer dağıtımlar (.tar.gz)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-x86_64-linux.tar.gz
-tar xzf micforge-0.1.0-x86_64-linux.tar.gz
-install -Dm755 micforge-0.1.0-x86_64-linux/micforge ~/.local/bin/micforge
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-x86_64-linux.tar.gz
+tar xzf micforge-x86_64-linux.tar.gz
+install -Dm755 micforge-x86_64-linux/micforge ~/.local/bin/micforge
 ```
 
 ### Kaynaktan derleme
 
-Rust **≥ 1.85**, `clang`, `pkgconf` ve PipeWire geliştirme başlıkları gerekir (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
+Rust **≥ 1.89**, `clang`, `pkgconf` ve PipeWire geliştirme başlıkları gerekir (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
 
 ```sh
 cargo build --release

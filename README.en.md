@@ -8,7 +8,7 @@ Pick your microphone, run it through EQ, dynamics, noise suppression and effects
 then use the result in Discord, OBS and any other app as a virtual mic called **"MicForge Mic"**.
 
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
-[![Rust 1.85+](https://img.shields.io/badge/rust-1.85%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
+[![Rust 1.89+](https://img.shields.io/badge/rust-1.89%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![PipeWire](https://img.shields.io/badge/audio-PipeWire-4b8bbe?style=flat-square)](https://pipewire.org)
 [![Platform: Linux](https://img.shields.io/badge/platform-Linux-lightgrey?style=flat-square&logo=linux&logoColor=white)](#install)
 [![TUI: ratatui](https://img.shields.io/badge/TUI-ratatui-8a2be2?style=flat-square)](https://ratatui.rs)
@@ -91,7 +91,7 @@ flowchart LR
     PAN -.-> MON([🎧 Monitor])
 ```
 
-The input stage always comes first, and the output gain and limiter always come last. Whatever order you give the modules, the output ceiling is never exceeded.
+The input stage always comes first, and the output gain and limiter always come last. Whatever order you give the modules, the output ceiling is never exceeded **while the limiter is enabled**. With the limiter off (e.g. the `Ham` preset), this guarantee does not apply.
 
 <a id="install"></a>
 
@@ -111,14 +111,14 @@ Prebuilt packages are uploaded to [Releases](https://github.com/Shidori5417/micf
 ### Ubuntu / Debian (.deb)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_0.1.0-1_amd64.deb
-sudo apt install ./micforge_0.1.0-1_amd64.deb
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_amd64.deb
+sudo apt install ./micforge_amd64.deb
 ```
 
 ### Fedora (.rpm)
 
 ```sh
-sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-1.x86_64.rpm
+sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge.x86_64.rpm
 ```
 
 ### Arch Linux and derivatives
@@ -132,14 +132,14 @@ makepkg -si
 ### Other distributions (.tar.gz)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-0.1.0-x86_64-linux.tar.gz
-tar xzf micforge-0.1.0-x86_64-linux.tar.gz
-install -Dm755 micforge-0.1.0-x86_64-linux/micforge ~/.local/bin/micforge
+wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-x86_64-linux.tar.gz
+tar xzf micforge-x86_64-linux.tar.gz
+install -Dm755 micforge-x86_64-linux/micforge ~/.local/bin/micforge
 ```
 
 ### Build from source
 
-Requires Rust **≥ 1.85**, `clang`, `pkgconf` and the PipeWire development headers (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
+Requires Rust **≥ 1.89**, `clang`, `pkgconf` and the PipeWire development headers (Arch: `libpipewire`, Ubuntu: `libpipewire-0.3-dev libclang-dev`, Fedora: `pipewire-devel clang`).
 
 ```sh
 cargo build --release

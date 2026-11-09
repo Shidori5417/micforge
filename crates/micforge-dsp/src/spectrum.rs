@@ -292,7 +292,7 @@ mod tests {
         assert!((out[c] + 6.0).abs() <= 1.0, "1 kHz sütunu: {} dB", out[c]);
         for (i, &v) in out.iter().enumerate() {
             let f = column_freq(i, n_cols, 20.0, 20_000.0);
-            if f < 500.0 || f > 2000.0 {
+            if !(500.0..=2000.0).contains(&f) {
                 assert!(v < out[c] - 40.0, "{f} Hz: {v} dB çok yüksek");
             }
         }

@@ -33,12 +33,16 @@ jobs:
       - name: Paketle
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          name="micforge-${ver}-x86_64-linux"
+          name="micforge-x86_64-linux"
           mkdir -p dist "$name"
           cp target/release/micforge LICENSE README.md README.en.md "$name/"
           tar -czf "dist/${name}.tar.gz" "$name"
+          cp "dist/${name}.tar.gz" "dist/micforge-${ver}-x86_64-linux.tar.gz"
           cargo deb -p micforge-tui --no-build --output dist/
           cargo generate-rpm -p crates/micforge-tui -o dist/
+          # Sabit adlı kopyalar: README'deki releases/latest/download/... bağlantıları sürümden bağımsız kalsın
+          cp dist/micforge_*_amd64.deb dist/micforge_amd64.deb
+          cp dist/micforge-*.x86_64.rpm dist/micforge.x86_64.rpm
           cd dist && sha256sum * > SHA256SUMS
       - name: GitHub sürümü oluştur
         env:

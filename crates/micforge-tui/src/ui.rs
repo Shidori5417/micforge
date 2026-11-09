@@ -224,6 +224,14 @@ pub fn draw(f: &mut Frame, app: &mut App) {
                 format!("{} {}_", l("Ad:", "Name:"), p.text),
                 l("[Enter] Kaydet  [Esc] İptal", "[Enter] Save  [Esc] Cancel"),
             ),
+            PromptKind::ConfirmSaveAs(name) => (
+                l(" Üzerine yazılsın mı? ", " Overwrite? "),
+                tr!(
+                    format!("\"{name}\" adında bir preset zaten var. Üzerine yazılsın mı?"),
+                    format!("A preset named \"{name}\" already exists. Overwrite it?")
+                ),
+                confirm_footer,
+            ),
             PromptKind::Import => (
                 l(" İçe aktar ", " Import "),
                 format!(
@@ -1247,6 +1255,13 @@ fn meter_row(buf: &mut Buffer, area: Rect, label: &str, m: &Meter) {
 fn draw_status(f: &mut Frame, app: &App, area: Rect) {
     let sh = &app.engine.shared;
     let (state, color) = match &app.status {
+        _ if app.engine_retry_at.is_some() => (
+            l(
+                "ses motoru durdu — yeniden bağlanılıyor",
+                "audio engine stopped — reconnecting",
+            ),
+            th().danger,
+        ),
         CaptureStatus::Idle => (l("cihaz seçilmedi", "no device selected"), th().warn),
         CaptureStatus::Waiting(_) => (l("cihaz bekleniyor", "waiting for device"), th().warn),
         CaptureStatus::Active(_) => (l("aktif", "active"), th().ok),

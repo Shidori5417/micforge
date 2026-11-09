@@ -1,7 +1,8 @@
 [package]
 name = "micforge-dsp"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 
@@ -14,7 +15,9 @@ criterion = "0.5"
 
 [features]
 default = ["pitch"]
-# Pitch shift modülü ve "Derin ses" perde kaydırması.
+# Zincirdeki bağımsız perde kaydırma (PitchShifter) aşamasını etkinleştirir;
+# kapalıyken bu aşama devre dışı kalır. "Derin ses" (VoiceChanger::Deep) bu
+# özelliğe bağlı değildir, her zaman kendi perde kaydırıcısıyla çalışır.
 pitch = []
 
 [[bench]]

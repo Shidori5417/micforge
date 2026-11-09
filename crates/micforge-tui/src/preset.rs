@@ -289,7 +289,7 @@ impl PresetStore {
     }
 
     /// Bu ada sahip bir preset zaten var mı (dosya adı veya görünen ad).
-    fn name_taken(&self, name: &str) -> bool {
+    pub fn name_taken(&self, name: &str) -> bool {
         if self.path_for(name).exists() {
             return true;
         }
