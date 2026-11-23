@@ -7,7 +7,6 @@ license.workspace = true
 authors.workspace = true
 description = "Real-time microphone processing TUI for Linux (PipeWire) with a virtual mic"
 repository = "https://github.com/Shidori5417/micforge"
-homepage = "https://github.com/Shidori5417/micforge"
 readme = "../../README.en.md"
 
 [dependencies]
