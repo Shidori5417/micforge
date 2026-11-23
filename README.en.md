@@ -106,19 +106,19 @@ Runs on any Linux distribution with PipeWire **1.0 or newer**:
 | Fedora 40+ | ✅ |
 | Debian 12, Ubuntu 22.04 | ❌ PipeWire too old |
 
-Prebuilt packages are uploaded to [Releases](https://github.com/Shidori5417/micforge/releases) automatically for every version (x86_64).
+Prebuilt packages are uploaded to [Releases](https://github.com/Shidori5417/micforge/releases) automatically for every version (x86_64). The links below point to v0.1.0; for newer versions see the [Releases](https://github.com/Shidori5417/micforge/releases) page and adjust the version in the file names.
 
 ### Ubuntu / Debian (.deb)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge_amd64.deb
-sudo apt install ./micforge_amd64.deb
+wget https://github.com/Shidori5417/micforge/releases/download/v0.1.0/micforge_0.1.0-1_amd64.deb
+sudo apt install ./micforge_0.1.0-1_amd64.deb
 ```
 
 ### Fedora (.rpm)
 
 ```sh
-sudo dnf install https://github.com/Shidori5417/micforge/releases/latest/download/micforge.x86_64.rpm
+sudo dnf install https://github.com/Shidori5417/micforge/releases/download/v0.1.0/micforge-0.1.0-1.x86_64.rpm
 ```
 
 ### Arch Linux and derivatives
@@ -132,9 +132,9 @@ makepkg -si
 ### Other distributions (.tar.gz)
 
 ```sh
-wget https://github.com/Shidori5417/micforge/releases/latest/download/micforge-x86_64-linux.tar.gz
-tar xzf micforge-x86_64-linux.tar.gz
-install -Dm755 micforge-x86_64-linux/micforge ~/.local/bin/micforge
+wget https://github.com/Shidori5417/micforge/releases/download/v0.1.0/micforge-0.1.0-x86_64-linux.tar.gz
+tar xzf micforge-0.1.0-x86_64-linux.tar.gz
+install -Dm755 micforge-0.1.0-x86_64-linux/micforge ~/.local/bin/micforge
 ```
 
 ### Build from source

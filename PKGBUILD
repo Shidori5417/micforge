@@ -6,8 +6,8 @@
 # Build output goes to $srcdir/target (inside src/, removed with it), so the
 # repository's own target/ directory is never touched by makepkg.
 #
-# To build from a published git repository later (once the project is on
-# GitHub), replace the source handling like this:
+# To build from the published git repository on GitHub instead, replace the
+# source handling like this:
 #
 #   source=("git+https://github.com/Shidori5417/micforge.git")
 #   sha256sums=('SKIP')
