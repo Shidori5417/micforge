@@ -7,6 +7,8 @@
 Pick your microphone, run it through EQ, dynamics, noise suppression and effects,<br>
 then use the result in Discord, OBS and any other app as a virtual mic called **"MicForge Mic"**.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Shidori5417/micforge/ci.yml?label=CI&style=flat-square)](https://github.com/Shidori5417/micforge/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Shidori5417/micforge?style=flat-square)](https://github.com/Shidori5417/micforge/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
 [![Rust 1.89+](https://img.shields.io/badge/rust-1.89%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![PipeWire](https://img.shields.io/badge/audio-PipeWire-4b8bbe?style=flat-square)](https://pipewire.org)
