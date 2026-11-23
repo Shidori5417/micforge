@@ -7,6 +7,8 @@
 Mikrofonunu seç, sesini EQ, dinamik işleme, gürültü bastırma ve efektlerden geçir;<br>
 sonucu Discord, OBS ve diğer uygulamalarda **„MicForge Mic”** adlı sanal mikrofon olarak kullan.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Shidori5417/micforge/ci.yml?label=CI&style=flat-square)](https://github.com/Shidori5417/micforge/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Shidori5417/micforge?style=flat-square)](https://github.com/Shidori5417/micforge/releases/latest)
 [![Lisans: GPL-3.0-or-later](https://img.shields.io/badge/lisans-GPL--3.0--or--later-blue?style=flat-square)](LICENSE)
 [![Rust 1.89+](https://img.shields.io/badge/rust-1.89%2B-orange?style=flat-square&logo=rust)](https://www.rust-lang.org)
 [![PipeWire](https://img.shields.io/badge/ses-PipeWire-4b8bbe?style=flat-square)](https://pipewire.org)
