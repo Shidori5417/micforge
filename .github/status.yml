@@ -1,0 +1,7 @@
+# Read by github.com/Shidori5417 (profile README) and the portfolio site.
+# Edit when the project's state changes; no need to touch it otherwise.
+# status: active | prototype | released | maintenance | paused | archived
+status: released
+focus:
+  en: "v0.1.0 is out with AUR, .deb and .rpm packages."
+  tr: "v0.1.0 yayında: AUR, .deb ve .rpm paketleri."
