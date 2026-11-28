@@ -33,11 +33,13 @@ jobs:
       - name: Paketle
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          name="micforge-x86_64-linux"
-          mkdir -p dist "$name"
-          cp target/release/micforge LICENSE README.md README.en.md "$name/"
-          tar -czf "dist/${name}.tar.gz" "$name"
-          cp "dist/${name}.tar.gz" "dist/micforge-${ver}-x86_64-linux.tar.gz"
+          unver="micforge-x86_64-linux"
+          verdir="micforge-${ver}-x86_64-linux"
+          mkdir -p dist "$unver" "$verdir"
+          cp target/release/micforge LICENSE README.md README.en.md "$unver/"
+          cp target/release/micforge LICENSE README.md README.en.md "$verdir/"
+          tar -czf "dist/${unver}.tar.gz" "$unver"
+          tar -czf "dist/${verdir}.tar.gz" "$verdir"
           cargo deb -p micforge-tui --no-build --output dist/
           cargo generate-rpm -p crates/micforge-tui -o dist/
           # Sabit adlı kopyalar: README'deki releases/latest/download/... bağlantıları sürümden bağımsız kalsın

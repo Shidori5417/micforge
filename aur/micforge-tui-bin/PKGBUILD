@@ -1,6 +1,7 @@
 # Maintainer: Mehmet Karaca <karacamemo1 at gmail dot com>
-pkgname=micforge-bin
+pkgname=micforge-tui-bin
 _pkgname=micforge
+_aurname=micforge-tui
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Real-time microphone processing TUI for PipeWire (prebuilt binary)"
@@ -8,8 +9,8 @@ arch=('x86_64')
 url="https://github.com/Shidori5417/micforge"
 license=('GPL-3.0-or-later')
 depends=('pipewire' 'wireplumber' 'gcc-libs' 'glibc')
-provides=("$_pkgname=$pkgver")
-conflicts=("$_pkgname")
+provides=("$_aurname=$pkgver")
+conflicts=("$_aurname")
 source=("$url/releases/download/v$pkgver/$_pkgname-$pkgver-x86_64-linux.tar.gz")
 sha256sums=('880ca3478f87e7b213397d354a5b657a130b096c6043059b8e592844ff27fb21')
 

@@ -14,13 +14,17 @@ anyhow = "1.0.104"
 crossterm = "0.29"
 dirs = "7.0.0"
 ebur128 = "0.1.11"
-micforge-audio = { version = "0.1.0", path = "../micforge-audio" }
-micforge-dsp = { version = "0.1.0", path = "../micforge-dsp" }
+micforge-audio = { version = "0.1.0", path = "../micforge-audio", default-features = false }
+micforge-dsp = { version = "0.1.0", path = "../micforge-dsp", default-features = false }
 ratatui = "0.30"
 rtrb = "0.4"
 serde = { version = "1.0.229", features = ["derive"] }
 signal-hook = "0.4.6"
 toml = "1.2.1"
+
+[features]
+default = ["pitch"]
+pitch = ["micforge-audio/pitch", "micforge-dsp/pitch"]
 
 [[bin]]
 name = "micforge"

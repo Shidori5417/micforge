@@ -35,10 +35,22 @@ fn restore_terminal() {
 /// Aynı anda tek MicForge: ikinci örnek aynı adla ikinci bir sanal mikrofon açardı.
 /// Kilit süreç bitince (çökme dahil) çekirdek tarafından bırakılır.
 fn single_instance_lock() -> Result<std::fs::File, String> {
-    let dir = std::env::var_os("XDG_RUNTIME_DIR")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(std::env::temp_dir);
-    let path = dir.join("micforge.lock");
+    let path = match std::env::var_os("XDG_RUNTIME_DIR") {
+        Some(d) => std::path::PathBuf::from(d).join("micforge.lock"),
+        None => {
+            #[cfg(unix)]
+            let name = {
+                use std::os::unix::fs::MetadataExt;
+                match std::fs::metadata("/proc/self") {
+                    Ok(m) => format!("micforge-{}.lock", m.uid()),
+                    Err(_) => "micforge.lock".to_string(),
+                }
+            };
+            #[cfg(not(unix))]
+            let name = "micforge.lock";
+            std::env::temp_dir().join(name)
+        }
+    };
     let file = std::fs::File::create(&path).map_err(|e| {
         tr!(
             format!("Kilit dosyası açılamadı ({}): {e}", path.display()),
@@ -59,9 +71,43 @@ fn single_instance_lock() -> Result<std::fs::File, String> {
     }
 }
 
+fn handle_cli_args() {
+    let Some(arg) = std::env::args().nth(1) else {
+        return;
+    };
+    match arg.as_str() {
+        "-h" | "--help" => {
+            println!("micforge {}", env!("CARGO_PKG_VERSION"));
+            println!(
+                "{}",
+                l(
+                    "PipeWire için gerçek zamanlı mikrofon işleme TUI arayüzü.\n\nKullanım: micforge [SEÇENEK]\n\nSeçenekler:\n  -h, --help     Yardımı göster ve çık\n  -V, --version  Sürümü göster ve çık",
+                    "Real-time microphone processing TUI for PipeWire.\n\nUsage: micforge [OPTION]\n\nOptions:\n  -h, --help     Show help and exit\n  -V, --version  Show version and exit"
+                )
+            );
+            std::process::exit(0);
+        }
+        "-V" | "--version" => {
+            println!("micforge {}", env!("CARGO_PKG_VERSION"));
+            std::process::exit(0);
+        }
+        other => {
+            eprintln!(
+                "micforge: {}",
+                tr!(
+                    format!("bilinmeyen seçenek: {other} (yardım için --help)"),
+                    format!("unknown option: {other} (see --help)")
+                )
+            );
+            std::process::exit(2);
+        }
+    }
+}
+
 fn main() {
     // Config okunmadan önceki iletiler (kilit, bozuk config uyarısı) sistem dilinde.
     i18n::set_en(i18n::resolve(None));
+    handle_cli_args();
     let _lock = match single_instance_lock() {
         Ok(l) => l,
         Err(e) => {

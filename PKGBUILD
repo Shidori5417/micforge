@@ -16,7 +16,7 @@
 # check() and package(), and use "$srcdir/micforge" instead of "$startdir"
 # for LICENSE and the READMEs in package().
 
-pkgname=micforge
+pkgname=micforge-tui
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="Real-time microphone processor for PipeWire (TUI) with a virtual 'MicForge Mic' source"

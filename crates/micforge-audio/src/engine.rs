@@ -608,11 +608,13 @@ fn push_tap<I: Iterator<Item = f32>>(p: &mut Producer<f32>, n: usize, it: I) {
     let n = n.min(p.slots());
     if let Ok(mut w) = p.write_chunk_uninit(n) {
         let (a, b) = w.as_mut_slices();
+        let mut written = 0;
         for (slot, v) in a.iter_mut().chain(b.iter_mut()).zip(it) {
             slot.write(v);
+            written += 1;
         }
-        // SAFETY: `it` en az `n` öğe üretir (çağıranlar `n` uzunlukta dilim verir).
-        unsafe { w.commit_all() };
+        // SAFETY: `written` adet öğe az önce `slot.write` ile başlatıldı.
+        unsafe { w.commit(written) };
     }
 }
 

@@ -7,6 +7,10 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-micforge-dsp = { version = "0.1.0", path = "../micforge-dsp" }
+micforge-dsp = { version = "0.1.0", path = "../micforge-dsp", default-features = false }
 pipewire = { version = "0.10", features = ["v1_0_0"] }
 rtrb = "0.4"
+
+[features]
+default = ["pitch"]
+pitch = ["micforge-dsp/pitch"]
