@@ -125,6 +125,8 @@ sudo dnf install https://github.com/Shidori5417/micforge/releases/download/v0.1.
 
 ### Arch Linux and derivatives
 
+Build and install from the local `PKGBUILD` in the repository root (note: `micforge` on AUR is a different project; AUR packaging manifests are staged in `aur/micforge-tui` and `aur/micforge-tui-bin`):
+
 ```sh
 git clone https://github.com/Shidori5417/micforge.git
 cd micforge

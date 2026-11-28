@@ -1,4 +1,4 @@
-pkgbase = micforge-bin
+pkgbase = micforge-tui-bin
 	pkgdesc = Real-time microphone processing TUI for PipeWire (prebuilt binary)
 	pkgver = 0.1.0
 	pkgrel = 1
@@ -9,9 +9,9 @@ pkgbase = micforge-bin
 	depends = wireplumber
 	depends = gcc-libs
 	depends = glibc
-	provides = micforge=0.1.0
-	conflicts = micforge
+	provides = micforge-tui=0.1.0
+	conflicts = micforge-tui
 	source = https://github.com/Shidori5417/micforge/releases/download/v0.1.0/micforge-0.1.0-x86_64-linux.tar.gz
 	sha256sums = 880ca3478f87e7b213397d354a5b657a130b096c6043059b8e592844ff27fb21
 
-pkgname = micforge-bin
+pkgname = micforge-tui-bin

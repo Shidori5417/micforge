@@ -3,5 +3,5 @@
 # status: active | prototype | released | maintenance | paused | archived
 status: released
 focus:
-  en: "v0.1.0 is out with AUR, .deb and .rpm packages."
-  tr: "v0.1.0 yayında: AUR, .deb ve .rpm paketleri."
+  en: "v0.1.0 is out with .deb, .rpm and Arch PKGBUILD packages."
+  tr: "v0.1.0 yayında: .deb, .rpm ve Arch PKGBUILD paketleri."

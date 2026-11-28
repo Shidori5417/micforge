@@ -125,6 +125,8 @@ sudo dnf install https://github.com/Shidori5417/micforge/releases/download/v0.1.
 
 ### Arch Linux ve türevleri
 
+Depo kökündeki yerel `PKGBUILD` ile kurabilirsiniz (AUR'daki `micforge` başka bir projeye aittir; AUR tarifleri depoda `aur/micforge-tui` ve `aur/micforge-tui-bin` adlarıyla taslak olarak tutulur):
+
 ```sh
 git clone https://github.com/Shidori5417/micforge.git
 cd micforge
